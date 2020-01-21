@@ -3,6 +3,7 @@
 #include <boost/dynamic_bitset.hpp>
 
 #include "Continuous.h"
+#include "gnuplot-iostream.h"
 
 using namespace boost;
 using namespace std;
@@ -19,12 +20,15 @@ vector<string> xname;
 vector<string> uname;
 vector<Expression_AST<Real>> xexpr;
 vector<Expression_AST<Real>> uexpr;
+vector<Interval> initialStateInterval;
 int m, k;
 double period, stepSize;
 
 // Flowstar definition
-const int order = 6;
-const double eps = 1e-10;
+int order = 6;
+double eps = 1e-10;
+int queueSize = 1000;
+Interval I(-0.01, 0.01);  // remainder estimation
 Computational_Setting setting;
 Deterministic_Continuous_Dynamics dynamics({});
 
@@ -32,8 +36,7 @@ Deterministic_Continuous_Dynamics dynamics({});
 vector<vector<Interval>> grids;
 vector<vector<vector<int>>> oneStepGraph;  // [start][meet] 0: not meet, 1: meet
 vector<vector<int>> revKStepGraph;
-dynamic_bitset<> Xs;
-vector<int> safeInitialGrids;  // final answer
+dynamic_bitset<> Ts, Tk, Ti;
 
 void parseModel(char* modelPath) {
     printf("[Info] Parsing model.\n");
@@ -60,19 +63,32 @@ void parseModel(char* modelPath) {
     }
     fscanf(file, "%lf%lf", &period, &stepSize);
     fscanf(file, "%d%d", &m, &k);
+    for (int i = 0; i < xcnt; i++) {
+        double start, end;
+        fscanf(file, "%lf%lf", &start, &end);
+        initialStateInterval.push_back({start, end});
+    }
     fclose(file);
 }
 
 void buildFlowstar() {
-    printf("[Info] Building the setting related to FLOW*.\n");
+    printf("[Info] Building FLOW* configuration.\n");
+    FILE *file = fopen("config.txt", "r");
+    fscanf(file, "%d", &order);
+    fscanf(file, "%lf", &eps);
+    fscanf(file, "%d", &queueSize);
+    double start, end;
+    fscanf(file, "%lf%lf", &start, &end);
+    I = Interval(start, end);
+    cout << order << endl;
+    cout << eps << endl;
+    cout << queueSize << endl;
+    cout << I << endl;
     setting.setFixedStepsize(stepSize, order);  // stepsize and order for reachability analysis
     setting.setTime(period);  // time horizon for a single control step
     setting.setCutoffThreshold(eps);  // cutoff threshold
-    setting.setQueueSize(1000);  // queue size for the symbolic remainder
+    setting.setQueueSize(queueSize);  // queue size for the symbolic remainder
     setting.printOn();  // print out the steps
-
-    // remainder estimation
-    Interval I(-0.01, 0.01);
     vector<Interval> remainder_estimation(stateVars.size(), I);
     setting.setRemainderEstimation(remainder_estimation);
 
@@ -84,6 +100,7 @@ void buildFlowstar() {
         ode.push_back(Expression_AST<Real>("0"));
     }
     dynamics = Deterministic_Continuous_Dynamics(ode);
+    fclose(file);
 }
 
 vector<Interval> curInt;
@@ -209,7 +226,7 @@ void buildKStepGraph() {
         swap(now, prev);
         for (int id = 0; id < n; id++) {
             // clean reachable
-            for (int miss = 0; miss < m; miss++) {
+            for (int miss = 0; miss <= m; miss++) {
                 (*now)[id][miss].reset();
             }
 
@@ -247,16 +264,15 @@ void buildKStepGraph() {
     }
 
     // final
-    int start = 0, end = 0, edge = 0;
-    dynamic_bitset<> reach(n);
+    int edge = 0;
     revKStepGraph.resize(n);
-    Xs.resize(n);
+    Ts.resize(n);
+    Tk.resize(n);
     for (int id = 0; id < n; id++) {
         if ((*now)[id][0].any()) {
-            Xs.set(id);
-            start++;
+            Ts.set(id);
             edge += (*now)[id][0].count();
-            reach |= (*now)[id][0]; 
+            Tk |= (*now)[id][0]; 
             for (int nextId = 0; nextId < n; nextId++) {
                 if ((*now)[id][0].test(nextId)) {
                     revKStepGraph[nextId].push_back(id);
@@ -264,21 +280,20 @@ void buildKStepGraph() {
             }
         }
     }
-    end = reach.count();
-    printf("[Success] Start Region Size: %d\n", start);
-    printf("          End Region: %d\n", end);
+    printf("[Success] Start Region Size: %d\n", Ts.count());
+    printf("          End Region: %d\n", Tk.count());
     printf("          Number of Edges: %d\n", edge);
 }
 
 void findLargestClosedSubgraph() {
     printf("[Info] Finding the largest closed subgraph.\n");
     int n = grids.size();
-    dynamic_bitset<> safe(n);
     dynamic_bitset<> visit(n);
-    safe.set();  // all grids are in X0 at the begining
+    Ti.resize(n);
+    Ti.set();  // all grids are in Ti at the begining
     queue<int> que;
     for (int id = 0; id < n; id++) {
-        if (!Xs.test(id)) {
+        if (!Ts.test(id)) {
             que.push(id);
             visit.set(id);
         }
@@ -286,19 +301,56 @@ void findLargestClosedSubgraph() {
     while (!que.empty()) {
         int id = que.front();
         que.pop();
-        safe.set(id, 0);
+        Ti.set(id, 0);
         for (int nextId: revKStepGraph[id]) {
             if (visit.test(nextId)) continue;
             visit.set(nextId);
             que.push(nextId);
         }
     }
-    for (int id = 0; id < n; id++) {
-        if (safe.test(id)) {
-            safeInitialGrids.push_back(id);
-        }
+    printf("[Success] Safe Initial Region Size: %d\n", Ti.count());
+}
+
+void plotGrids() {
+    if (grids[0].size() == 1) {
+        printf("[Warning] No plot for 1 dimension.\n");
+        return;
     }
-    printf("[Success] Safe Initial Region Size: %d\n", safe.count());
+    Gnuplot gp;
+    gp << "set terminal svg size 720, 480\n";
+    gp << "set output 'output.svg'\n";
+    gp << "set xrange [ " << -safeDist << " : " << safeDist << " ]\n";
+    gp << "set yrange [ " << -safeDist << " : " << safeDist << " ]\n";
+    for (int i = 0; i < grids.size(); i++) {
+        if (!Ti.test(i)) continue;
+        Interval dim0 = grids[i][0];
+        Interval dim1 = grids[i][1];
+        sprintf(buf, "set object rect from %f,%f to %f,%f fc 'green' fillstyle solid 1.0 noborder\n",
+            dim0.inf(), dim1.inf(), dim0.sup(), dim1.sup());
+        gp << buf;
+    }
+    for (int i = 0; i < grids.size(); i++) {
+        if (!Ts.test(i)) continue;
+        Interval dim0 = grids[i][0];
+        Interval dim1 = grids[i][1];
+        sprintf(buf, "set object rect from %f,%f to %f,%f fc lt 2 fillstyle pattern 4 noborder\n",
+            dim0.inf(), dim1.inf(), dim0.sup(), dim1.sup());
+        gp << buf;
+    }
+    // initial state set
+    {
+        Interval dim0 = initialStateInterval[0];
+        Interval dim1 = initialStateInterval[1];
+        sprintf(buf, "set object rect from %f,%f to %f,%f lw 3 fs empty border fc 'blue'\n",
+            dim0.inf(), dim1.inf(), dim0.sup(), dim1.sup());
+        gp << buf;
+    }
+    gp << "set key outside\n";
+    gp << "set key right top\n";
+    gp << "plot NaN title 'Safe state region' with boxes fc 'black', ";
+    gp << "NaN title 'Safe initial state region' with boxes fc 'green' fillstyle solid 1.0 noborder, ";
+    gp << "NaN title 'Local safety region' with boxes fc lt 2 fillstyle pattern 4, ";
+    gp << "NaN title 'Initial state region' with boxes lw 3 fs empty border fc 'blue'\n";
 }
 
 int main(int argc, char** argv) {
@@ -308,4 +360,5 @@ int main(int argc, char** argv) {
     buildOneStepGraph();
     buildKStepGraph();
     findLargestClosedSubgraph();
+    plotGrids();
 }

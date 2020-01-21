@@ -16,15 +16,15 @@ A Tool for Safety Analysis of Weakly-hard Systems
 
 ### Installation
 
-We provide two ways to use our program.
+We provide two ways to install the program.
 
-* Build on your own environment.
+* Build in your own environment.
 
   ```
   make
   ```
 
-  **Warning:** We strongly suggest you using **g++-8** to build our project.
+  **Warning:** We strongly suggest you using **g++-8** to build the project.
 
 * Docker image
 
@@ -48,36 +48,52 @@ We provide two ways to use our program.
    <input_equa.input_dim>
    <period> <step_size>
    <m> <k>
+   <initial_state.1>
+   ...
+   <initial_state.state_dim>
    ```
 
-2. Execute the verification tool with the model file.
+2. You can also modify the configuration of *Flow\**.
+
+   ```
+   <order>
+   <cutoff_threshold>
+   <queue_size>
+   <remainder_estimation>
+   ```
+
+3. Execute the verification tool with the model file.
 
    ```
    ./saw model.txt
    ```
 
-   You can run the example model in example directory.
+   You can run the example model in *example/*.
 
    ```
    ./saw example/model1.txt
    ./saw example/model3.txt
    ```
 
-3. The output format is as follow:
+4. The result of *model3* is as follow:
 
    ```
    [Info] Parsing model.
-   [Info] Building the setting related to FLOW*.
+   [Info] Building FLOW* configuration.
    [Info] Building grids.
    [Info] Building one-step graph.
           Process: 100.00%
-   [Success] Number of edges: 438
+   [Success] Number of edges: 20080
    [Info] Building K-step graph.
-   [Success] Start Region Size: 100
-             End Region: 32
-             Number of Edges: 562
+   [Success] Start Region Size: 1700
+             End Region: 86
+             Number of Edges: 89162
    [Info] Finding the largest closed subgraph.
-   [Success] Safe Initial Region Size: 100
+   [Success] Safe Initial Region Size: 1700
    ```
+
+   The program will plot the region of first two dimensions to *output.svg*.
+
+   ![output3](example/output3.svg)
 
    
