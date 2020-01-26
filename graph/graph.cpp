@@ -80,10 +80,6 @@ void buildFlowstar() {
     double start, end;
     fscanf(file, "%lf%lf", &start, &end);
     I = Interval(start, end);
-    cout << order << endl;
-    cout << eps << endl;
-    cout << queueSize << endl;
-    cout << I << endl;
     setting.setFixedStepsize(stepSize, order);  // stepsize and order for reachability analysis
     setting.setTime(period);  // time horizon for a single control step
     setting.setCutoffThreshold(eps);  // cutoff threshold
@@ -311,31 +307,93 @@ void findLargestClosedSubgraph() {
     printf("[Success] Safe Initial Region Size: %d\n", Ti.count());
 }
 
+void checkSafety() {
+    printf("[Info] Calculating area.\n");
+    double area = 1, gridArea = 0;
+    for (int d = 0; d < xcnt; d++) {
+        Interval dim = initialStateInterval[d];
+        area *= dim.width();
+    }
+    for (int i = 0; i < grids.size(); i++) {
+        if (!Ti.test(i)) continue;
+        auto &grid = grids[i];
+        double nowArea = 1;
+        for (int d = 0; d < xcnt; d++) {
+            Interval dim = initialStateInterval[d].intersect(grid[d]);
+            if (dim.width() < eps) {
+                nowArea = 0;
+                break;
+            }
+            nowArea *= dim.width();
+        }
+        gridArea += nowArea;
+    }
+    printf("       Initial state region: %f\n", area);
+    printf("       Grids Intersection:   %f\n", gridArea);
+    if (abs(area - gridArea) / area < 1e-6) {
+        printf("       Result: safe\n");
+    } else {
+        printf("       Result: unsafe\n");
+    }
+}
+
 void plotGrids() {
     if (grids[0].size() == 1) {
-        printf("[Warning] No plot for 1 dimension.\n");
+        printf("[Warning] No result image for 1 dimension.\n");
+        double l = 1e100, r = 1e-100;
+        for (int i = 0; i < grids.size(); i++) {
+            if (!Ti.test(i)) continue;
+            Interval dim = grids[i][0];
+            l = min(l, dim.inf());
+            r = max(r, dim.sup());
+        }
+        printf("          Safe initial region: from %f to %f.\n", l, r);
         return;
     }
     Gnuplot gp;
-    gp << "set terminal svg size 720, 480\n";
+    gp << "set terminal svg size 480, 480\n";
     gp << "set output 'output.svg'\n";
     gp << "set xrange [ " << -safeDist << " : " << safeDist << " ]\n";
     gp << "set yrange [ " << -safeDist << " : " << safeDist << " ]\n";
+    vector<int> rowId;
+    Interval colInt;
+    int prevColId = 0;
     for (int i = 0; i < grids.size(); i++) {
         if (!Ti.test(i)) continue;
-        Interval dim0 = grids[i][0];
-        Interval dim1 = grids[i][1];
-        sprintf(buf, "set object rect from %f,%f to %f,%f fc 'green' fillstyle solid 1.0 noborder\n",
-            dim0.inf(), dim1.inf(), dim0.sup(), dim1.sup());
-        gp << buf;
+        if (rowId.size() && (i / d > prevColId ||  i != rowId.back() + 1)) {
+            sprintf(buf, "set object rect from %f,%f to %f,%f fc 'green' fillstyle solid 1.0 noborder\n",
+                colInt.inf(), grids[rowId.front()][1].inf(), colInt.sup(), grids[rowId.back()][1].sup());
+            gp << buf;
+            rowId.clear();
+        }
+        prevColId = i / d;
+        colInt = grids[i][0];
+        rowId.push_back(i);
     }
+    if (rowId.size()) {
+        sprintf(buf, "set object rect from %f,%f to %f,%f fc 'green' fillstyle solid 1.0 noborder\n",
+            colInt.inf(), grids[rowId.front()][1].inf(), colInt.sup(), grids[rowId.back()][1].sup());
+        gp << buf;
+        rowId.clear();
+    }
+    prevColId = 0;
     for (int i = 0; i < grids.size(); i++) {
         if (!Ts.test(i)) continue;
-        Interval dim0 = grids[i][0];
-        Interval dim1 = grids[i][1];
+        if (rowId.size() && (i / d > prevColId ||  i != rowId.back() + 1)) {
+            sprintf(buf, "set object rect from %f,%f to %f,%f fc lt 2 fillstyle pattern 4 noborder\n",
+                colInt.inf(), grids[rowId.front()][1].inf(), colInt.sup(), grids[rowId.back()][1].sup());
+            gp << buf;
+            rowId.clear();
+        }
+        prevColId = i / d;
+        colInt = grids[i][0];
+        rowId.push_back(i);
+    }
+    if (rowId.size()) {
         sprintf(buf, "set object rect from %f,%f to %f,%f fc lt 2 fillstyle pattern 4 noborder\n",
-            dim0.inf(), dim1.inf(), dim0.sup(), dim1.sup());
+            colInt.inf(), grids[rowId.front()][1].inf(), colInt.sup(), grids[rowId.back()][1].sup());
         gp << buf;
+        rowId.clear();
     }
     // initial state set
     {
@@ -345,8 +403,9 @@ void plotGrids() {
             dim0.inf(), dim1.inf(), dim0.sup(), dim1.sup());
         gp << buf;
     }
-    gp << "set key outside\n";
-    gp << "set key right top\n";
+    gp << "set nokey\n";
+    // gp << "set key outside\n";
+    // gp << "set key right top\n";
     gp << "plot NaN title 'Safe state region' with boxes fc 'black', ";
     gp << "NaN title 'Safe initial state region' with boxes fc 'green' fillstyle solid 1.0 noborder, ";
     gp << "NaN title 'Local safety region' with boxes fc lt 2 fillstyle pattern 4, ";
@@ -360,5 +419,6 @@ int main(int argc, char** argv) {
     buildOneStepGraph();
     buildKStepGraph();
     findLargestClosedSubgraph();
+    checkSafety();
     plotGrids();
 }

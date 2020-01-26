@@ -1,3 +1,9 @@
 graph/*.o
-flowstart/*.o
+flowstar/*.o
+flowstar/flowstar
+flowstar/lex.yy.c
+flowstar/libflowstar.a
+flowstar/modelParser.output
+flowstar/modelParser.tab.c
+flowstar/modelParser.tab.h
 saw
