@@ -26,13 +26,9 @@ We provide two ways to install the program.
 
   **Warning:** We strongly suggest you using **g++-8** to build the project.
 
-* Docker image
+* You can also use the precompiled program under Ubuntu16.04 x86_64
 
-  ```
-  TODO
-  ```
-
-### Usage
+  * **./saw_linux_x86_64**
 
 1. Create a model file as follow format.
 
@@ -94,10 +90,12 @@ We provide two ways to install the program.
    [Info] Calculating area.
        Initial state region: 4.000000
           Grids Intersection:   4.000000
-```
-   
-The program will plot the region of first two dimensions to *output.svg*.
-   
-   ![output3](example/output2_(2,5).svg)
-   
-   
+   ```
+
+    The program will plot the region of first two dimensions to *output.svg*.
+
+   ![output2](example/output2_(2,5).svg)
+
+
+
+
