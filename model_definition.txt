@@ -1,5 +1,4 @@
-<state_dim> <input_dim>
-<safe_distance> <grid_count>
+<state_dim> <input_dim> <grid_count>
 <state_var_names> <input_var_names>
 <state_ode.1>
 ...
@@ -9,6 +8,9 @@
 <input_equa.input_dim>
 <period> <step_size>
 <m> <k>
+<safe_state.1>
+...
+<safe_state.state_dim>
 <initial_state.1>
 ...
 <initial_state.state_dim>

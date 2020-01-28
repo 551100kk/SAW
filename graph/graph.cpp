@@ -14,12 +14,12 @@ char buf[BUFSIZE];
 
 // System definition
 int xcnt, ucnt;
-double safeDist;
 int d;
 vector<string> xname;
 vector<string> uname;
 vector<Expression_AST<Real>> xexpr;
 vector<Expression_AST<Real>> uexpr;
+vector<Interval> safeStateInterval;
 vector<Interval> initialStateInterval;
 int m, k;
 double period, stepSize;
@@ -41,7 +41,7 @@ dynamic_bitset<> Ts, Tk, Ti;
 void parseModel(char* modelPath) {
     printf("[Info] Parsing model.\n");
     FILE *file = fopen(modelPath, "r");
-    fscanf(file, "%d%d%lf%d", &xcnt, &ucnt, &safeDist, &d);
+    fscanf(file, "%d%d%d", &xcnt, &ucnt, &d);
     for (int i = 0; i < xcnt; i++) {
         fscanf(file, "%s", buf);
         xname.push_back(buf);
@@ -63,6 +63,11 @@ void parseModel(char* modelPath) {
     }
     fscanf(file, "%lf%lf", &period, &stepSize);
     fscanf(file, "%d%d", &m, &k);
+    for (int i = 0; i < xcnt; i++) {
+        double start, end;
+        fscanf(file, "%lf%lf", &start, &end);
+        safeStateInterval.push_back({start, end});
+    }
     for (int i = 0; i < xcnt; i++) {
         double start, end;
         fscanf(file, "%lf%lf", &start, &end);
@@ -108,10 +113,10 @@ void buildGrids(int curDim=0) {
         grids.push_back(curInt);
         return;
     }
-    double blockSize = safeDist * 2 / d;
+    double blockSize = (safeStateInterval[curDim].sup() - safeStateInterval[curDim].inf()) / d;
     for (int i = 0; i < d; i++) {
-        double start = -safeDist + i * blockSize;
-        double end = -safeDist + (i + 1) * blockSize;
+        double start = safeStateInterval[curDim].inf() + i * blockSize;
+        double end = safeStateInterval[curDim].inf() + (i + 1) * blockSize;
         curInt.push_back(Interval(start, end));
         buildGrids(curDim + 1);
         curInt.pop_back();
@@ -123,10 +128,10 @@ void getIntersectGridsId(int curDim, int curId, vector<Interval> &region, vector
         gridsId.push_back(curId);
         return;
     }
-    double blockSize = safeDist * 2 / d;
+    double blockSize = (safeStateInterval[curDim].sup() - safeStateInterval[curDim].inf()) / d;
     for (int i = 0; i < d; i++) {
-        double start = -safeDist + i * blockSize;
-        double end = -safeDist + (i + 1) * blockSize;
+        double start = safeStateInterval[curDim].inf() + i * blockSize;
+        double end = safeStateInterval[curDim].inf() + (i + 1) * blockSize;
         if (Interval(start, end).intersect(region[curDim]).width() < eps) {
             continue;
         }
@@ -178,7 +183,7 @@ void buildOneStepGraph() {
             bool safe = true;
             for (int i = 0; i < xcnt; i++) {
                 double segLen = reachableState[i].width();
-                double inLen = reachableState[i].intersect(Interval(-safeDist, safeDist)).width();
+                double inLen = reachableState[i].intersect(safeStateInterval[i]).width();
                 if (abs(segLen - inLen) > eps) {
                     safe = false;
                 }
@@ -347,14 +352,16 @@ void plotGrids() {
             l = min(l, dim.inf());
             r = max(r, dim.sup());
         }
-        printf("          Safe initial region: from %f to %f.\n", l, r);
+        if (l < r) {
+            printf("          Safe initial region: from %f to %f.\n", l, r);    
+        }
         return;
     }
     Gnuplot gp;
     gp << "set terminal svg size 480, 480\n";
     gp << "set output 'output.svg'\n";
-    gp << "set xrange [ " << -safeDist << " : " << safeDist << " ]\n";
-    gp << "set yrange [ " << -safeDist << " : " << safeDist << " ]\n";
+    gp << "set xrange [ " << safeStateInterval[0].inf() << " : " << safeStateInterval[0].sup() << " ]\n";
+    gp << "set yrange [ " << safeStateInterval[1].inf() << " : " << safeStateInterval[1].sup() << " ]\n";
     vector<int> rowId;
     Interval colInt;
     int prevColId = 0;
