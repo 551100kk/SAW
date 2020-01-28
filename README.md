@@ -37,8 +37,7 @@ We provide two ways to install the program.
 1. Create a model file as follow format.
 
    ```
-   <state_dim> <input_dim>
-   <safe_distance> <grid_count>
+   <state_dim> <input_dim> <grid_count>
    <state_var_names> <input_var_names>
    <state_ode.1>
    ...
@@ -48,6 +47,9 @@ We provide two ways to install the program.
    <input_equa.input_dim>
    <period> <step_size>
    <m> <k>
+   <safe_state.1>
+   ...
+   <safe_state.state_dim>
    <initial_state.1>
    ...
    <initial_state.state_dim>
@@ -71,10 +73,9 @@ We provide two ways to install the program.
    You can run the example model in *example/*.
 
    ```
-   ./saw example/model1.txt
-   ./saw example/model3.txt
+   ./saw example/model2.txt
    ```
-
+   
 4. The result of *model3* is as follow:
 
    ```
@@ -83,17 +84,20 @@ We provide two ways to install the program.
    [Info] Building grids.
    [Info] Building one-step graph.
           Process: 100.00%
-   [Success] Number of edges: 20080
+   [Success] Number of edges: 19354
    [Info] Building K-step graph.
-   [Success] Start Region Size: 1700
-             End Region: 86
-             Number of Edges: 89162
+   [Success] Start Region Size: 1908
+             End Region: 1208
+             Number of Edges: 102436
    [Info] Finding the largest closed subgraph.
-   [Success] Safe Initial Region Size: 1700
-   ```
-
-   The program will plot the region of first two dimensions to *output.svg*.
-
-   ![output3](example/output3.svg)
-
+   [Success] Safe Initial Region Size: 1622
+   [Info] Calculating area.
+       Initial state region: 4.000000
+          Grids Intersection:   4.000000
+```
+   
+The program will plot the region of first two dimensions to *output.svg*.
+   
+   ![output3](example/output2_(2,5).svg)
+   
    
