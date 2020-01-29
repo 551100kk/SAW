@@ -16,7 +16,7 @@ A Tool for Safety Analysis of Weakly-hard Systems
 
 ### Installation
 
-We provide two ways to install the program.
+We provide three ways to install the program.
 
 * The virtual machine where the tool is ready to run can be found at https://www.csie.ntu.edu.tw/~r08922054/SAW.ova
 
@@ -35,6 +35,8 @@ We provide two ways to install the program.
 * You can also use the precompiled program under Ubuntu16.04 x86_64
 
   * **./saw_linux_x86_64**
+
+### Usage
 
 1. Create a model file as follow format.
 
