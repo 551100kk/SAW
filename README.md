@@ -18,11 +18,12 @@ A Tool for Safety Analysis of Weakly-hard Systems
 
 We provide three ways to install the program.
 
-* The virtual machine where the tool is ready to run can be found at https://www.csie.ntu.edu.tw/~r08922054/SAW.ova
+* The virtual machine where the tool is ready to run can be found at https://www.csie.ntu.edu.tw/~r08922054/SAW.ova. To reproduce the results of all the examples in the paper, please follow the instruction in ./artifact_evaluation_readme.txt
 
-  * Account: saw
-  * Password: saw
+  * Account: saw, Password: saw
   * Path: /home/SAW
+  * Precompiled version only. No dependency in this VM.
+  * SHA1: 563b5586e740a3f19d38d9e747f120a05c6f77df
 
 * Build in your own environment.
 
@@ -32,7 +33,7 @@ We provide three ways to install the program.
 
   **Warning:** We strongly suggest you using **g++-8** to build the project.
 
-* You can also use the precompiled program under Ubuntu16.04 x86_64
+* Use the precompiled program in x86_64 linux environment.
 
   * **./saw_linux_x86_64**
 
@@ -59,7 +60,7 @@ We provide three ways to install the program.
    <initial_state.state_dim>
    ```
 
-2. You can also modify the configuration of *Flow\**.
+2. You can also modify the configuration of **Flow\***.
 
    ```
    <order>
@@ -72,15 +73,19 @@ We provide three ways to install the program.
 
    ```
    ./saw model.txt
+   or
+   ./saw_linux_x86_64 model.txt
    ```
 
-   You can run the example model in *example/*.
-
+   You can test the example models in **example/**.
+   
    ```
    ./saw example/model2.txt
+   or
+   ./saw_linux_x86_64 example/model2.txt
    ```
    
-4. The result of *model3* is as follow:
+4. The result of **example/model2** is as follow:
 
    ```
    [Info] Parsing model.
@@ -96,11 +101,11 @@ We provide three ways to install the program.
    [Info] Finding the largest closed subgraph.
    [Success] Safe Initial Region Size: 1622
    [Info] Calculating area.
-       Initial state region: 4.000000
+          Initial state region: 4.000000
           Grids Intersection:   4.000000
    ```
 
-    The program will plot the region of first two dimensions to *output.svg*.
+    The program will plot the result region of first two dimensions to **output.svg**.
 
    ![output2](example/output2_(2,5).svg)
 

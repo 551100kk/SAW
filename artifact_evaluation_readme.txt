@@ -1,4 +1,4 @@
-To test the example in this paper, you can run the precompiled version in this directory. No compilation required.
+To test the examples in this paper, you can run the precompiled version in this directory. No compilation required.
 ./saw_linux_x86_64 example/model1.txt
 ./saw_linux_x86_64 example/model2.txt
 ./saw_linux_x86_64 example/model3.txt
