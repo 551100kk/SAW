@@ -23,7 +23,7 @@ We provide three ways to install the program.
   * Account: saw, Password: saw
   * Path: /home/SAW
   * Precompiled version only. No dependency in this VM.
-  * SHA1: 8cba08a8b2d1463fd3bf55b4051ce1ff3f852cda
+  * SHA1: 7d11f1fbe1ca1c65ae94f00a9cd1ad1e8502469d
 
 * Build in your own environment.
 
