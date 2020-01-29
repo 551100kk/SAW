@@ -80,12 +80,12 @@ We provide three ways to install the program.
    You can test the example models in **example/**.
    
    ```
-   ./saw example/model2.txt
+   ./saw example/model1.txt
    or
-   ./saw_linux_x86_64 example/model2.txt
+   ./saw_linux_x86_64 example/model1.txt
    ```
    
-4. The result of **example/model2** is as follow:
+4. The result of **example/model1** is as follow:
 
    ```
    [Info] Parsing model.
@@ -107,7 +107,7 @@ We provide three ways to install the program.
 
     The program will plot the result region of first two dimensions to **output.svg**.
 
-   ![output2](example/output2_(2,5).svg)
+   ![output2](example/output1_(2,5).svg)
 
 
 
