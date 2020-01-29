@@ -18,6 +18,12 @@ A Tool for Safety Analysis of Weakly-hard Systems
 
 We provide two ways to install the program.
 
+* The virtual machine where the tool is ready to run can be found at https://www.csie.ntu.edu.tw/~r08922054/SAW.ova
+
+  * Account: saw
+  * Password: saw
+  * Path: /home/SAW
+
 * Build in your own environment.
 
   ```
